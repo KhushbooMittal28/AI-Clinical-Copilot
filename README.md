@@ -45,48 +45,6 @@ The final system will serve as a prototype for experimentation and evaluation ra
 
 ---
 
-## System Workflow
-
-```text
-                Doctor
-                   │
-                   ▼
-            Web Interface
-                   │
-                   ▼
-        Patient Information
-        / Clinical Notes
-                   │
-                   ▼
-            Preprocessing
-                   │
-                   ▼
-              NLP / LLM
-                   │
-                   ▼
-                 RAG
-                   │
-          ┌────────┴────────┐
-          ▼                 ▼
-   Medical Knowledge    Vector Database
-       Base                  │
-          └────────┬────────┘
-                   ▼
-          Retrieved Context
-                   │
-                   ▼
-                 LLM
-                   │
-                   ▼
-        Structured Clinical
-             Output
-                   │
-                   ▼
-            Doctor Review
-                   │
-                   ▼
-         Final Clinical Decision
-
 ## Tech Stack
 
 | Component | Technology |
@@ -102,6 +60,36 @@ The final system will serve as a prototype for experimentation and evaluation ra
 | Medical Knowledge Base | Curated Medical Guidelines and Reference Documents |
 | Database | To be finalized |
 | Version Control | Git + GitHub |
+
+## 🏥 System Workflow
+
+The proposed system follows a clinician-in-the-loop workflow:
+
+```text
+Doctor
+   ↓
+Web Interface
+   ↓
+Patient Information / Clinical Notes
+   ↓
+Preprocessing
+   ↓
+NLP / LLM
+   ↓
+RAG
+   ↓
+Medical Knowledge Base + Vector Database
+   ↓
+Retrieved Context
+   ↓
+LLM
+   ↓
+Structured Clinical Output
+   ↓
+Doctor Review
+   ↓
+Final Clinical Decision
+```
 
 ## References
 
