@@ -1,0 +1,159 @@
+.patients-page {
+  min-height: 100%;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 28px;
+}
+
+.page-label {
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.page-description {
+  color: #8993a5;
+  font-size: 13px;
+  margin: 8px 0 0;
+}
+
+.patient-count {
+  background: white;
+  border: 1px solid #e7ebf1;
+  border-radius: 10px;
+  padding: 12px 20px;
+  text-align: center;
+}
+
+.patient-count strong {
+  display: block;
+  font-size: 22px;
+  color: #2563eb;
+}
+
+.patient-count span {
+  color: #8993a5;
+  font-size: 11px;
+}
+
+.search-bar {
+  background: white;
+  border: 1px solid #e2e7ef;
+  border-radius: 9px;
+  padding: 12px 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.search-bar span {
+  color: #8993a5;
+  font-size: 20px;
+}
+
+.search-bar input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.patients-table {
+  background: white;
+  border: 1px solid #e7ebf1;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.table-header,
+.patient-table-row {
+  display: grid;
+  grid-template-columns: 2fr 0.7fr 1fr 1.2fr 1fr 0.8fr;
+  align-items: center;
+  gap: 15px;
+  padding: 16px 20px;
+}
+
+.table-header {
+  background: #f8f9fb;
+  color: #8993a5;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.patient-table-row {
+  border-top: 1px solid #edf0f4;
+  color: #4d586b;
+  font-size: 12px;
+}
+
+.patient-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.small-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #edf2ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.patient-name strong {
+  display: block;
+  color: #172033;
+  font-size: 12px;
+}
+
+.patient-name span {
+  color: #9aa3b2;
+  font-size: 10px;
+}
+
+.patient-status {
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+}
+
+.patient-status.stable {
+  background: #e9f9f0;
+  color: #168c5c;
+}
+
+.patient-status.review {
+  background: #fff4d9;
+  color: #ad7600;
+}
+
+.patient-status.pending {
+  background: #f1ecff;
+  color: #7441c4;
+}
+
+.view-patient {
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 11px;
+}
