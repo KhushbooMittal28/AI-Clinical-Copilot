@@ -1,213 +1,354 @@
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import "./PatientProfile.css";
 
+const API_URL = "http://127.0.0.1:8000";
+
+function formatDate(value) {
+  if (!value) return "Date not recorded";
+
+  const datePart = String(value).split("T")[0];
+  const parts = datePart.split("-");
+
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
+  return String(value);
+}
+
+function getDescription(item, fallback = "Name not recorded") {
+  if (typeof item === "string") return item;
+  return item?.description || fallback;
+}
+
 function PatientProfile() {
+  const { id } = useParams();
+
+  const [patient, setPatient] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchPatient() {
+      setLoading(true);
+      setError("");
+      setPatient(null);
+
+      try {
+        const response = await fetch(
+          `${API_URL}/api/patients/${encodeURIComponent(id)}`
+        );
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error("Patient record not found.");
+          }
+
+          throw new Error("Unable to load this patient record.");
+        }
+
+        const data = await response.json();
+
+        if (!cancelled) {
+          setPatient(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.message || "Could not connect to the backend.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    if (id) {
+      fetchPatient();
+    } else {
+      setError("Patient ID is missing from the URL.");
+      setLoading(false);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="profile-page">
+        <p>Loading patient record...</p>
+      </div>
+    );
+  }
+
+  if (error || !patient) {
+    return (
+      <div className="profile-page">
+        <h1>Unable to display patient</h1>
+        <p>{error || "Patient record unavailable."}</p>
+      </div>
+    );
+  }
+
+  const demographics = patient.demographics || {};
+  const conditions = patient.conditions || [];
+  const medications = patient.medications || [];
+  const observations = patient.observations || [];
+  const encounters = patient.encounters || [];
+  const procedures = patient.procedures || [];
+  const allergies = patient.allergies || [];
+
+  const patientLabel = `Patient ${String(patient.patient_id || id).slice(0, 8)}`;
+
   return (
     <div className="profile-page">
-
       {/* Header */}
       <div className="profile-header">
-
         <div>
           <p className="page-label">Patient Record</p>
-          <h1>Patient 001</h1>
-          <p className="patient-id">
-            Patient ID: P001
-          </p>
+          <h1>{patientLabel}</h1>
+          <p className="patient-id">Patient ID: {patient.patient_id || id}</p>
         </div>
 
-        <button className="copilot-action">
-          ✦ Open AI Copilot
+        <button
+          className="copilot-action"
+          disabled
+          title="AI integration is planned"
+        >
+          ✦ AI Copilot — Coming Soon
         </button>
-
       </div>
 
-
-      {/* Basic Information */}
+      {/* Basic information */}
       <section className="profile-grid">
-
         <div className="profile-card patient-overview">
-
           <div className="large-avatar">
-            P1
+            {demographics.gender?.slice(0, 1) || "P"}
           </div>
 
           <div>
-            <h2>Patient 001</h2>
-            <p>Male · 46 years</p>
-            <span className="stable-badge">
-              Stable
-            </span>
+            <h2>{patientLabel}</h2>
+            <p>
+              {demographics.gender || "Gender not recorded"}
+              {demographics.age != null
+                ? ` · ${demographics.age} years`
+                : ""}
+            </p>
+            <span className="stable-badge">Synthetic Record</span>
           </div>
-
         </div>
 
-
         <div className="profile-card">
-
           <h3>Patient Information</h3>
 
           <div className="info-grid">
-
             <div>
               <span>Gender</span>
-              <strong>Male</strong>
+              <strong>{demographics.gender || "Not recorded"}</strong>
             </div>
 
             <div>
               <span>Age</span>
-              <strong>46 years</strong>
+              <strong>
+                {demographics.age != null
+                  ? `${demographics.age} years`
+                  : "Not recorded"}
+              </strong>
             </div>
 
             <div>
-              <span>Marital Status</span>
-              <strong>Married</strong>
+              <span>Conditions</span>
+              <strong>{conditions.length}</strong>
             </div>
 
             <div>
               <span>Patient ID</span>
-              <strong>P001</strong>
+              <strong>{patient.patient_id || id}</strong>
             </div>
-
           </div>
-
         </div>
-
       </section>
 
-
-      {/* Medical History */}
+      {/* Medical history */}
       <section className="profile-card history-card">
-
         <div className="section-heading">
-
           <div>
             <h2>Medical History</h2>
             <p>
-              Information retrieved from the patient's
+              Information retrieved from this patient's synthetic
               longitudinal record.
             </p>
           </div>
-
         </div>
 
-
         <div className="history-grid">
-
           {/* Conditions */}
           <div className="history-section">
-
             <h3>Conditions</h3>
 
-            <div className="history-item">
-              <strong>Hypertension</strong>
-              <span>Recorded condition</span>
-            </div>
-
-            <div className="history-item">
-              <strong>Type 2 Diabetes</strong>
-              <span>Recorded condition</span>
-            </div>
-
+            {conditions.length ? (
+              conditions.map((item, index) => (
+                <div
+                  className="history-item"
+                  key={`${item.description || "condition"}-${index}`}
+                >
+                  <strong>{getDescription(item, "Condition name unavailable")}</strong>
+                  <span>
+                    {formatDate(item.start)}
+                    {" – "}
+                    {item.stop
+                      ? formatDate(item.stop)
+                      : "No stop date recorded"}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="empty-history">No conditions recorded.</div>
+            )}
           </div>
-
 
           {/* Medications */}
           <div className="history-section">
-
             <h3>Medications</h3>
 
-            <div className="history-item">
-              <strong>Medication record</strong>
-              <span>4 medication records available</span>
-            </div>
-
+            {medications.length ? (
+              medications.map((item, index) => (
+                <div
+                  className="history-item"
+                  key={`${item.description || "medication"}-${index}`}
+                >
+                  <strong>
+                    {getDescription(item, "Medication name unavailable")}
+                  </strong>
+                  <span>
+                    {formatDate(item.start)}
+                    {" – "}
+                    {item.stop
+                      ? formatDate(item.stop)
+                      : "No stop date recorded"}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="empty-history">No medications recorded.</div>
+            )}
           </div>
-
 
           {/* Allergies */}
           <div className="history-section">
-
             <h3>Allergies</h3>
 
-            <div className="empty-history">
-              No recorded allergies
-            </div>
-
+            {allergies.length ? (
+              allergies.map((item, index) => (
+                <div className="history-item" key={index}>
+                  <strong>
+                    {getDescription(item, "Recorded allergy")}
+                  </strong>
+                  {item?.start && <span>{formatDate(item.start)}</span>}
+                </div>
+              ))
+            ) : (
+              <div className="empty-history">
+                No allergies recorded in this dataset.
+              </div>
+            )}
           </div>
-
 
           {/* Observations */}
           <div className="history-section">
-
             <h3>Observations</h3>
 
-            <div className="history-item">
-              <strong>Clinical observations</strong>
-              <span>Recent patient measurements</span>
-            </div>
-
+            {observations.length ? (
+              observations.slice(0, 8).map((item, index) => (
+                <div
+                  className="history-item"
+                  key={`${item.description || "observation"}-${index}`}
+                >
+                  <strong>
+                    {getDescription(item, "Observation name unavailable")}
+                  </strong>
+                  <span>
+                    {item.value ?? "Value not recorded"}
+                    {item.units ? ` ${item.units}` : ""}
+                    {" · "}
+                    {formatDate(item.date)}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="empty-history">No observations recorded.</div>
+            )}
           </div>
-
         </div>
-
       </section>
-
 
       {/* Encounters */}
       <section className="profile-card">
-
         <div className="section-heading">
-
           <div>
             <h2>Recent Encounters</h2>
             <p>
-              Recent healthcare encounters associated
-              with this patient.
+              Healthcare encounters associated with this synthetic patient.
             </p>
           </div>
-
         </div>
 
+        {encounters.length ? (
+          encounters.slice(0, 5).map((item, index) => (
+            <div
+              className="encounter-row"
+              key={`${item.start || "encounter"}-${index}`}
+            >
+              <div className="encounter-date">
+                <strong>{formatDate(item.start)}</strong>
+                <span>{item.encounter_class || "Encounter"}</span>
+              </div>
 
-        <div className="encounter-row">
+              <div>
+                <strong>
+                  {getDescription(item, "Clinical encounter")}
+                </strong>
+                <p>{item.reason_description || "No reason recorded"}</p>
+              </div>
 
-          <div className="encounter-date">
-            <strong>Today</strong>
-            <span>Primary Care</span>
-          </div>
-
-          <div>
-            <strong>Clinical consultation</strong>
-            <p>Routine patient encounter</p>
-          </div>
-
-          <span className="encounter-status">
-            Completed
-          </span>
-
-        </div>
-
-
-        <div className="encounter-row">
-
-          <div className="encounter-date">
-            <strong>Previous</strong>
-            <span>Primary Care</span>
-          </div>
-
-          <div>
-            <strong>Follow-up consultation</strong>
-            <p>Previous medical encounter</p>
-          </div>
-
-          <span className="encounter-status">
-            Completed
-          </span>
-
-        </div>
-
+              <span className="encounter-status">
+                {item.stop ? "Completed" : "Status not recorded"}
+              </span>
+            </div>
+          ))
+        ) : (
+          <p>No encounters recorded.</p>
+        )}
       </section>
 
+      {/* Procedures */}
+      <section className="profile-card">
+        <div className="section-heading">
+          <div>
+            <h2>Procedures</h2>
+            <p>Procedures recorded in the patient history.</p>
+          </div>
+        </div>
+
+        {procedures.length ? (
+          procedures.slice(0, 5).map((item, index) => (
+            <div
+              className="history-item"
+              key={`${item.description || "procedure"}-${index}`}
+            >
+              <strong>{getDescription(item, "Procedure name unavailable")}</strong>
+              <span>{formatDate(item.start)}</span>
+            </div>
+          ))
+        ) : (
+          <p>No procedures recorded.</p>
+        )}
+      </section>
     </div>
   );
 }
