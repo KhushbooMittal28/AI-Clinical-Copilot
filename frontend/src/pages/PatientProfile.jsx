@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import "./PatientProfile.css";
 
 const API_URL = "http://127.0.0.1:8000";
@@ -23,6 +23,7 @@ function getDescription(item, fallback = "Name not recorded") {
 }
 
 function PatientProfile() {
+  const navigate = useNavigate();
   const { id } = useParams();
 
   const [patient, setPatient] = useState(null);
@@ -78,6 +79,36 @@ function PatientProfile() {
     };
   }, [id]);
 
+  
+  const [patientLabel, setPatientLabel] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch(`${API_URL}/api/patients`)
+      .then((response) => {
+        if (!response.ok) throw new Error("Could not load patient labels");
+        return response.json();
+      })
+      .then((patients) => {
+        if (cancelled) return;
+        const match = patients.find((item) => item.patient_id === id);
+        setPatientLabel(
+          match?.patient_label || `Patient ${String(id || "").slice(0, 8)}`
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPatientLabel(`Patient ${String(id || "").slice(0, 8)}`);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+
   if (loading) {
     return (
       <div className="profile-page">
@@ -103,7 +134,7 @@ function PatientProfile() {
   const procedures = patient.procedures || [];
   const allergies = patient.allergies || [];
 
-  const patientLabel = `Patient ${String(patient.patient_id || id).slice(0, 8)}`;
+  
 
   return (
     <div className="profile-page">
@@ -114,13 +145,12 @@ function PatientProfile() {
           <h1>{patientLabel}</h1>
           <p className="patient-id">Patient ID: {patient.patient_id || id}</p>
         </div>
-
         <button
           className="copilot-action"
-          disabled
-          title="AI integration is planned"
+          type="button"
+          onClick={() => navigate(`/copilot?patientId=${encodeURIComponent(id)}`)}
         >
-          ✦ AI Copilot — Coming Soon
+          ✦ Open AI Copilot
         </button>
       </div>
 
@@ -135,9 +165,7 @@ function PatientProfile() {
             <h2>{patientLabel}</h2>
             <p>
               {demographics.gender || "Gender not recorded"}
-              {demographics.age != null
-                ? ` · ${demographics.age} years`
-                : ""}
+              {demographics.age != null ? ` · ${demographics.age} years` : ""}
             </p>
             <span className="stable-badge">Synthetic Record</span>
           </div>
@@ -180,8 +208,8 @@ function PatientProfile() {
           <div>
             <h2>Medical History</h2>
             <p>
-              Information retrieved from this patient's synthetic
-              longitudinal record.
+              Information retrieved from this patient's synthetic longitudinal
+              record.
             </p>
           </div>
         </div>
@@ -197,7 +225,9 @@ function PatientProfile() {
                   className="history-item"
                   key={`${item.description || "condition"}-${index}`}
                 >
-                  <strong>{getDescription(item, "Condition name unavailable")}</strong>
+                  <strong>
+                    {getDescription(item, "Condition name unavailable")}
+                  </strong>
                   <span>
                     {formatDate(item.start)}
                     {" – "}
@@ -246,9 +276,7 @@ function PatientProfile() {
             {allergies.length ? (
               allergies.map((item, index) => (
                 <div className="history-item" key={index}>
-                  <strong>
-                    {getDescription(item, "Recorded allergy")}
-                  </strong>
+                  <strong>{getDescription(item, "Recorded allergy")}</strong>
                   {item?.start && <span>{formatDate(item.start)}</span>}
                 </div>
               ))
@@ -264,7 +292,7 @@ function PatientProfile() {
             <h3>Observations</h3>
 
             {observations.length ? (
-              observations.slice(0, 8).map((item, index) => (
+              observations.map((item, index) => (
                 <div
                   className="history-item"
                   key={`${item.description || "observation"}-${index}`}
@@ -292,14 +320,12 @@ function PatientProfile() {
         <div className="section-heading">
           <div>
             <h2>Recent Encounters</h2>
-            <p>
-              Healthcare encounters associated with this synthetic patient.
-            </p>
+            <p>Healthcare encounters associated with this synthetic patient.</p>
           </div>
         </div>
 
         {encounters.length ? (
-          encounters.slice(0, 5).map((item, index) => (
+          encounters.map((item, index) => (
             <div
               className="encounter-row"
               key={`${item.start || "encounter"}-${index}`}
@@ -310,10 +336,8 @@ function PatientProfile() {
               </div>
 
               <div>
-                <strong>
-                  {getDescription(item, "Clinical encounter")}
-                </strong>
-                <p>{item.reason_description || "No reason recorded"}</p>
+                <strong>{getDescription(item, "Clinical encounter")}</strong>
+                <p>{item.reason || item.reason_description || "No reason recorded"}</p>
               </div>
 
               <span className="encounter-status">
@@ -336,12 +360,14 @@ function PatientProfile() {
         </div>
 
         {procedures.length ? (
-          procedures.slice(0, 5).map((item, index) => (
+          procedures.map((item, index) => (
             <div
               className="history-item"
               key={`${item.description || "procedure"}-${index}`}
             >
-              <strong>{getDescription(item, "Procedure name unavailable")}</strong>
+              <strong>
+                {getDescription(item, "Procedure name unavailable")}
+              </strong>
               <span>{formatDate(item.start)}</span>
             </div>
           ))

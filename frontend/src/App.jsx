@@ -1,628 +1,222 @@
+
 import { BrowserRouter, Routes, Route, Link } from "react-router-dom";
 import Patients from "./pages/Patients";
 import PatientProfile from "./pages/PatientProfile";
+import Layout from "./components/Layout";
 import "./App.css";
+import AICopilot from "./pages/AICopilot";
+import ConsultationSummary from "./pages/ConsultationSummary";
+import { useEffect, useState } from "react";
 
-
-// =========================
-// DASHBOARD
-// =========================
 
 function Dashboard() {
+  const [patients, setPatients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadPatients() {
+      try {
+        const response = await fetch(
+          "http://127.0.0.1:8000/api/patients",
+          { signal: controller.signal }
+        );
+
+        if (!response.ok) {
+          throw new Error("Unable to load patient records.");
+        }
+
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+          throw new Error("Unexpected patient data received.");
+        }
+
+        setPatients(data);
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          setError(err.message || "Unable to connect to the backend.");
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadPatients();
+
+    return () => controller.abort();
+  }, []);
+
+  const recentPatients = patients.slice(0, 4);
+
   return (
-    <div className="app">
-
-      {/* Sidebar */}
-      <aside className="sidebar">
-
-        <div className="logo">
-
-          <div className="logo-icon">
-            +
-          </div>
-
-          <div>
-            <h2>Clinical Copilot</h2>
-            <span>Primary Care AI</span>
-          </div>
-
+    <>
+      <header className="topbar">
+        <div>
+          <p className="welcome">Good morning, Doctor</p>
+          <h1>Dashboard</h1>
         </div>
 
+        <div className="doctor-profile">
+          <div className="avatar">DR</div>
+          <div>
+            <strong>Dr. Sharma</strong>
+            <span>Primary Care</span>
+          </div>
+        </div>
+      </header>
 
-        <nav>
-
-          <Link
-            to="/"
-            className="nav-item active"
-          >
-            <span>⌂</span>
-            Dashboard
-          </Link>
-
-
-          <Link
-            to="/patients"
-            className="nav-item"
-          >
-            <span>♙</span>
-            Patients
-          </Link>
-
-
-          <button className="nav-item">
-            <span>✦</span>
-            AI Copilot
-          </button>
-
-
-          <button className="nav-item">
-            <span>▣</span>
-            Consultations
-          </button>
-
-        </nav>
-
-
-        <div className="sidebar-bottom">
-
-          <button className="nav-item">
-            <span>⚙</span>
-            Settings
-          </button>
-
+      <section className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-icon blue">♙</div>
+          <div>
+            <span>Total Patients</span>
+            <h2>{loading ? "—" : error ? "—" : patients.length}</h2>
+          </div>
         </div>
 
-      </aside>
-
-
-      {/* Main Content */}
-      <main className="main-content">
-
-        <header className="topbar">
-
+        <div className="stat-card">
+          <div className="stat-icon green">▤</div>
           <div>
-            <p className="welcome">
-              Good morning, Doctor
-            </p>
-
-            <h1>
-              Dashboard
-            </h1>
+            <span>Consultations</span>
+            <h2>—</h2>
           </div>
+        </div>
 
+        <div className="stat-card">
+          <div className="stat-icon purple">✧</div>
+          <div>
+            <span>AI Summaries</span>
+            <h2>—</h2>
+          </div>
+        </div>
 
-          <div className="doctor-profile">
+        <div className="stat-card">
+          <div className="stat-icon orange">◷</div>
+          <div>
+            <span>Pending Reviews</span>
+            <h2>—</h2>
+          </div>
+        </div>
+      </section>
 
-            <div className="avatar">
-              DR
-            </div>
-
+      <section className="dashboard-grid">
+        <div className="panel patients-panel">
+          <div className="panel-header">
             <div>
-              <strong>
-                Dr. Sharma
-              </strong>
-
-              <span>
-                Primary Care
-              </span>
+              <h2>Patient Records</h2>
+              <p>Recently listed patient records</p>
             </div>
 
+            <Link to="/patients" className="view-button">
+              View All
+            </Link>
           </div>
 
-        </header>
+          <div className="patient-list">
+            {loading && <p>Loading patient records...</p>}
 
+            {error && (
+              <p className="error-message" role="alert">
+                {error} Check that the FastAPI backend is running.
+              </p>
+            )}
 
-        {/* Statistics */}
+            {!loading && !error && recentPatients.length === 0 && (
+              <p>No patient records found.</p>
+            )}
 
-        <section className="stats-grid">
+            {!loading &&
+              !error &&
+              recentPatients.map((patient) => (
+                <Link
+                  to={`/patients/${encodeURIComponent(patient.patient_id)}`}
+                  className="patient-row"
+                  key={patient.patient_id}
+                  style={{ textDecoration: "none", color: "inherit" }}
+                >
+                  <div className="patient-avatar">
+                    {patient.patient_label?.slice(-3) || "—"}
+                  </div>
 
-          <div className="stat-card">
+                  <div className="patient-info">
+                    <strong>
+                      {patient.patient_label || "Unnamed patient"}
+                    </strong>
+                    <span>
+                      Age: {patient.age ?? "—"} · Gender:{" "}
+                      {patient.gender ?? "—"}
+                    </span>
+                  </div>
 
-            <div className="stat-icon blue">
-              ♙
-            </div>
-
-            <div>
-              <span>
-                Total Patients
-              </span>
-
-              <h2>
-                108
-              </h2>
-            </div>
-
+                  <span className="status stable">View record</span>
+                </Link>
+              ))}
           </div>
+        </div>
 
+        <div className="panel copilot-panel">
+          <div className="copilot-icon">✧</div>
+          <h2>AI Clinical Copilot</h2>
+          <p>
+            Review patient history, retrieve relevant clinical
+            information, and prepare structured consultation summaries.
+          </p>
 
-          <div className="stat-card">
+          <Link to="/copilot" className="copilot-button">
+            Open AI Copilot →
+          </Link>
 
-            <div className="stat-icon green">
-              ▣
-            </div>
-
-            <div>
-              <span>
-                Consultations
-              </span>
-
-              <h2>
-                24
-              </h2>
-            </div>
-
+          <div className="copilot-note">
+            <span>●</span> Clinician review required
           </div>
-
-
-          <div className="stat-card">
-
-            <div className="stat-icon purple">
-              ✦
-            </div>
-
-            <div>
-              <span>
-                AI Summaries
-              </span>
-
-              <h2>
-                18
-              </h2>
-            </div>
-
-          </div>
-
-
-          <div className="stat-card">
-
-            <div className="stat-icon orange">
-              ◷
-            </div>
-
-            <div>
-              <span>
-                Pending Reviews
-              </span>
-
-              <h2>
-                5
-              </h2>
-            </div>
-
-          </div>
-
-        </section>
-
-
-        {/* Dashboard Content */}
-
-        <section className="dashboard-grid">
-
-
-          {/* Recent Patients */}
-
-          <div className="panel patients-panel">
-
-            <div className="panel-header">
-
-              <div>
-
-                <h2>
-                  Recent Patients
-                </h2>
-
-                <p>
-                  Recently accessed patient records
-                </p>
-
-              </div>
-
-
-              <Link
-                to="/patients"
-                className="view-button"
-              >
-                View All
-              </Link>
-
-            </div>
-
-
-            <div className="patient-list">
-
-
-              <div className="patient-row">
-
-                <div className="patient-avatar">
-                  JD
-                </div>
-
-                <div className="patient-info">
-
-                  <strong>
-                    Patient 001
-                  </strong>
-
-                  <span>
-                    Last visit · Today
-                  </span>
-
-                </div>
-
-                <span className="status stable">
-                  Stable
-                </span>
-
-              </div>
-
-
-              <div className="patient-row">
-
-                <div className="patient-avatar">
-                  AS
-                </div>
-
-                <div className="patient-info">
-
-                  <strong>
-                    Patient 002
-                  </strong>
-
-                  <span>
-                    Last visit · Yesterday
-                  </span>
-
-                </div>
-
-                <span className="status review">
-                  Review
-                </span>
-
-              </div>
-
-
-              <div className="patient-row">
-
-                <div className="patient-avatar">
-                  RK
-                </div>
-
-                <div className="patient-info">
-
-                  <strong>
-                    Patient 003
-                  </strong>
-
-                  <span>
-                    Last visit · 2 days ago
-                  </span>
-
-                </div>
-
-                <span className="status stable">
-                  Stable
-                </span>
-
-              </div>
-
-
-              <div className="patient-row">
-
-                <div className="patient-avatar">
-                  NM
-                </div>
-
-                <div className="patient-info">
-
-                  <strong>
-                    Patient 004
-                  </strong>
-
-                  <span>
-                    Last visit · 3 days ago
-                  </span>
-
-                </div>
-
-                <span className="status pending">
-                  Pending
-                </span>
-
-              </div>
-
-
-            </div>
-
-          </div>
-
-
-          {/* AI Copilot */}
-
-          <div className="panel copilot-panel">
-
-            <div className="copilot-icon">
-              ✦
-            </div>
-
-            <h2>
-              AI Clinical Copilot
-            </h2>
-
-            <p>
-              Review patient history, retrieve relevant
-              clinical information, and generate structured
-              consultation summaries.
-            </p>
-
-            <button className="copilot-button">
-              Open AI Copilot →
-            </button>
-
-            <div className="copilot-note">
-
-              <span>
-                ●
-              </span>
-
-              Clinician review required
-
-            </div>
-
-          </div>
-
-
-        </section>
-
-      </main>
-
-    </div>
+        </div>
+      </section>
+    </>
   );
 }
 
-
-
-// =========================
-// PATIENTS PAGE
-// =========================
 
 function PatientsPage() {
-  return (
-    <div className="app">
-
-      <aside className="sidebar">
-
-        <div className="logo">
-
-          <div className="logo-icon">
-            +
-          </div>
-
-          <div>
-            <h2>
-              Clinical Copilot
-            </h2>
-
-            <span>
-              Primary Care AI
-            </span>
-          </div>
-
-        </div>
-
-
-        <nav>
-
-          <Link
-            to="/"
-            className="nav-item"
-          >
-            <span>⌂</span>
-            Dashboard
-          </Link>
-
-
-          <Link
-            to="/patients"
-            className="nav-item active"
-          >
-            <span>♙</span>
-            Patients
-          </Link>
-
-
-          <button className="nav-item">
-
-            <span>
-              ✦
-            </span>
-
-            AI Copilot
-
-          </button>
-
-
-          <button className="nav-item">
-
-            <span>
-              ▣
-            </span>
-
-            Consultations
-
-          </button>
-
-        </nav>
-
-
-        <div className="sidebar-bottom">
-
-          <button className="nav-item">
-
-            <span>
-              ⚙
-            </span>
-
-            Settings
-
-          </button>
-
-        </div>
-
-      </aside>
-
-
-      <main className="main-content">
-
-        <Patients />
-
-      </main>
-
-    </div>
-  );
+  return <Patients />;
 }
-
-
-
-// =========================
-// PATIENT PROFILE PAGE
-// =========================
 
 function PatientProfilePage() {
-  return (
-    <div className="app">
-
-      <aside className="sidebar">
-
-        <div className="logo">
-
-          <div className="logo-icon">
-            +
-          </div>
-
-          <div>
-            <h2>
-              Clinical Copilot
-            </h2>
-
-            <span>
-              Primary Care AI
-            </span>
-          </div>
-
-        </div>
-
-
-        <nav>
-
-          <Link
-            to="/"
-            className="nav-item"
-          >
-            <span>⌂</span>
-            Dashboard
-          </Link>
-
-
-          <Link
-            to="/patients"
-            className="nav-item active"
-          >
-            <span>♙</span>
-            Patients
-          </Link>
-
-
-          <button className="nav-item">
-
-            <span>
-              ✦
-            </span>
-
-            AI Copilot
-
-          </button>
-
-
-          <button className="nav-item">
-
-            <span>
-              ▣
-            </span>
-
-            Consultations
-
-          </button>
-
-        </nav>
-
-
-        <div className="sidebar-bottom">
-
-          <button className="nav-item">
-
-            <span>
-              ⚙
-            </span>
-
-            Settings
-
-          </button>
-
-        </div>
-
-      </aside>
-
-
-      <main className="main-content">
-
-        <PatientProfile />
-
-      </main>
-
-    </div>
-  );
+  return <PatientProfile />;
 }
 
+function CopilotPage() {
+  return <AICopilot />;
+}
 
-
-// =========================
-// APP ROUTES
-// =========================
+function ConsultationsPage() {
+  return (
+    <section className="panel">
+      <h1>Consultation Summary</h1>
+      <p>
+        This page will display structured consultation summaries for
+        clinician review. AI generation is not connected yet.
+      </p>
+    </section>
+  );
+}
 
 function App() {
-
   return (
-
     <BrowserRouter>
-
       <Routes>
-
-        {/* Dashboard */}
-        <Route
-          path="/"
-          element={<Dashboard />}
-        />
-
-
-        {/* Patients */}
-        <Route
-          path="/patients"
-          element={<PatientsPage />}
-        />
-
-
-        {/* Individual Patient */}
-        <Route
-          path="/patients/:id"
-          element={<PatientProfilePage />}
-        />
-
+        <Route path="/" element={<Layout><Dashboard /></Layout>} />
+        <Route path="/patients" element={<Layout><PatientsPage /></Layout>} />
+        <Route path="/patients/:id" element={<Layout><PatientProfilePage /></Layout>} />
+        <Route path="/copilot" element={<Layout><CopilotPage /></Layout>} />
+        <Route path="/consultations" element={<Layout><ConsultationSummary /></Layout>} />
       </Routes>
-
     </BrowserRouter>
-
   );
 }
-
 
 export default App;
