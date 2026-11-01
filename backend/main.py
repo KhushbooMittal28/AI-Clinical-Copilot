@@ -1,9 +1,14 @@
+
 import json
 from datetime import date, datetime
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+from llm_service import generate_clinical_answer
+
+from rag_service import RAGService
 
 app = FastAPI(title="AI Clinical Copilot API")
 
@@ -35,6 +40,14 @@ def load_records():
 
 # Load the dataset once when the backend starts.
 PATIENTS = load_records()
+
+# Load RAG service only when its API is first called.
+rag_service = None
+
+
+class RAGSearchRequest(BaseModel):
+    query: str = Field(min_length=3, max_length=1000)
+    top_k: int = Field(default=5, ge=1, le=10)
 
 
 def get_age(demographics):
@@ -102,7 +115,6 @@ def get_patient(patient_id: str):
 
     demographics = patient.get("demographics", {})
 
-    # Return only clinically relevant fields for this prototype.
     return {
         "patient_id": str(patient.get("patient_id", "")),
         "demographics": {
@@ -153,3 +165,56 @@ def get_patient(patient_id: str):
         ],
         "allergies": patient.get("allergies", []),
     }
+
+
+@app.post("/api/rag/search")
+def search_guidelines(request: RAGSearchRequest):
+    """Retrieve relevant passages from WHO clinical guidelines."""
+
+    global rag_service
+
+    try:
+        if rag_service is None:
+            rag_service = RAGService()
+
+        results = rag_service.search(
+            request.query,
+            request.top_k
+        )
+
+        return {
+            "query": request.query,
+            "results_count": len(results),
+            "results": results
+        }
+
+    except Exception as error:
+        print("RAG search error:", error)
+        raise HTTPException(
+            status_code=500,
+            detail="RAG search failed. Check the backend terminal."
+        )
+
+@app.post("/api/rag/answer")
+def generate_answer(request: RAGSearchRequest):
+    """Generate an evidence-grounded answer using Gemini."""
+
+    try:
+        result = generate_clinical_answer(
+            request.query,
+            top_k=request.top_k
+        )
+
+        return {
+            "query": request.query,
+            "answer": result["answer"],
+            "sources": result["sources"]
+        }
+
+    except Exception as error:
+        print("AI answer generation error:", error)
+
+        raise HTTPException(
+            status_code=500,
+            detail="AI answer generation failed. Check backend terminal."
+        )
