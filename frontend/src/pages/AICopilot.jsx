@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import "./AICopilot.css";
+import { askCopilot } from "../services/copilotService";
+import ReactMarkdown from "react-markdown";
 
 const API_BASE = "http://127.0.0.1:8000";
 
@@ -29,6 +31,10 @@ function AICopilot() {
   const [loadingPatients, setLoadingPatients] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [error, setError] = useState("");
+  const [chatQuestion, setChatQuestion] = useState("");
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -130,6 +136,40 @@ function AICopilot() {
   function handlePreview() {
     setShowPreview(true);
   }
+  async function handleAskCopilot() {
+    if (!chatQuestion.trim() || chatLoading) return;
+
+    const question = chatQuestion.trim();
+
+    setChatMessages((previous) => [
+      ...previous,
+      {
+        role: "user",
+        content: question,
+      },
+    ]);
+
+    setChatQuestion("");
+    setChatLoading(true);
+    setChatError("");
+
+    try {
+      const data = await askCopilot(question);
+
+      setChatMessages((previous) => [
+        ...previous,
+        {
+          role: "assistant",
+          content: data.answer || "No answer was returned.",
+          sources: data.sources || [],
+        },
+      ]);
+    } catch (err) {
+      setChatError(err.message || "Unable to get a response from AI Copilot.");
+    } finally {
+      setChatLoading(false);
+    }
+  }
 
   if (loadingPatients) {
     return <div className="copilot-page">Loading patients from FastAPI...</div>;
@@ -160,8 +200,8 @@ function AICopilot() {
       <div className="copilot-safety-banner">
         <span>ⓘ</span>
         <p>
-          Demo interface. AI analysis and guideline retrieval are not connected.
-          Clinician review is required.
+          AI guideline retrieval is connected. All generated responses require
+          clinician review.
         </p>
       </div>
 
@@ -380,20 +420,93 @@ function AICopilot() {
           <div className="copilot-step">03</div>
           <div>
             <h2>Clinical support</h2>
-            <p>Reserved for future guideline retrieval integration.</p>
+            <p>Ask questions about clinical guidelines using the AI Copilot.</p>
           </div>
         </div>
 
-        <div className="copilot-placeholder">
-          <span>✧</span>
-          <div>
-            <h3>Guideline references will appear here</h3>
-            <p>
-              Clinical guideline retrieval is not connected yet. No
-              recommendations have been generated.
+        <div className="copilot-chat">
+          <div className="copilot-chat-messages">
+            {chatMessages.length === 0 && (
+              <div className="copilot-placeholder">
+                <span>✧</span>
+                <div>
+                  <h3>Ask the AI Clinical Copilot</h3>
+                  <p>
+                    Ask a clinical guideline question. Answers are generated
+                    using retrieved guideline references.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {chatMessages.map((message, index) => (
+              <div key={index}>
+                <strong>
+                  {message.role === "user" ? "You" : "AI Copilot"}
+                </strong>
+
+                <div className="copilot-message-content">
+                  <ReactMarkdown>{message.content}</ReactMarkdown>
+                </div>
+
+                {message.sources?.length > 0 && (
+                  <div className="copilot-chat-sources">
+                    <strong>Guideline Sources:</strong>
+
+                    {message.sources.map((source, sourceIndex) => (
+                      <p key={sourceIndex}>
+                        {source.source_file || "Clinical guideline"}
+                        {source.page_number != null
+                          ? ` — Page ${source.page_number}`
+                          : ""}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {chatLoading && <p>AI Copilot is preparing an answer...</p>}
+          </div>
+
+          {chatError && (
+            <p role="alert" className="copilot-chat-error">
+              {chatError}
             </p>
+          )}
+
+          <div className="copilot-chat-input-area">
+            <textarea
+              className="copilot-textarea"
+              placeholder="Ask a clinical guideline question..."
+              value={chatQuestion}
+              onChange={(event) => setChatQuestion(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  handleAskCopilot();
+                }
+              }}
+              rows={3}
+            />
+
+            <button
+              className="copilot-primary-button"
+              type="button"
+              onClick={handleAskCopilot}
+              disabled={chatLoading || !chatQuestion.trim()}
+            >
+              {chatLoading ? "Generating answer..." : "Ask AI Copilot →"}
+            </button>
           </div>
         </div>
+
+        <p className="copilot-review-note">
+          AI-generated information is for clinical decision support only. Always
+          verify responses against the cited guidelines and obtain qualified
+          clinician review. This prototype does not diagnose patients or
+          prescribe treatment.
+        </p>
       </section>
 
       {showPreview && patientDetails && (
