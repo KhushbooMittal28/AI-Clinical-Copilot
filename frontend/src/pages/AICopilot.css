@@ -340,3 +340,94 @@
   color: #64748b;
   line-height: 1.6;
 }
+
+
+/* AI Copilot Chat Messages */
+
+.copilot-message-content {
+  margin-top: 10px;
+  padding: 18px 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #263449;
+  font-size: 14px;
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.copilot-message-content > :first-child {
+  margin-top: 0;
+}
+
+.copilot-message-content > :last-child {
+  margin-bottom: 0;
+}
+
+.copilot-message-content h1,
+.copilot-message-content h2,
+.copilot-message-content h3 {
+  margin: 18px 0 10px;
+  color: #172033;
+  line-height: 1.4;
+}
+
+.copilot-message-content p {
+  margin: 10px 0;
+}
+
+.copilot-message-content ul,
+.copilot-message-content ol {
+  padding-left: 24px;
+  margin: 10px 0;
+}
+
+.copilot-message-content li {
+  margin-bottom: 7px;
+}
+
+.copilot-message-content strong {
+  color: #172033;
+}
+
+.copilot-message-content code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: #e8edf5;
+  font-size: 13px;
+}
+
+.copilot-message-content blockquote {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border-left: 3px solid #2563eb;
+  background: #eff6ff;
+  color: #475569;
+}
+
+/* Guideline Sources */
+
+.copilot-chat-sources {
+  margin: 12px 0 22px;
+  padding: 14px 16px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #eff6ff;
+}
+
+.copilot-chat-sources > strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #1e40af;
+  font-size: 13px;
+}
+
+.copilot-chat-sources p {
+  margin: 7px 0 0;
+  padding-left: 12px;
+  border-left: 2px solid #93c5fd;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
