@@ -21,7 +21,7 @@ client = genai.Client(api_key=API_KEY)
 # Initialize existing RAG service
 rag = RAGService()
 
-MODEL_NAME = "gemini-3.8-flash"
+MODEL_NAME = "gemini-3.5-flash-lite"
 
 
 def generate_clinical_answer(question: str, top_k: int = 5):
