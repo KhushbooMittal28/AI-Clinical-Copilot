@@ -6,9 +6,11 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from llm_service import generate_clinical_answer
 
+from llm_service import generate_clinical_answer
 from rag_service import RAGService
+from patient_context import get_patient_by_id
+
 
 app = FastAPI(title="AI Clinical Copilot API")
 
@@ -48,6 +50,7 @@ rag_service = None
 class RAGSearchRequest(BaseModel):
     query: str = Field(min_length=3, max_length=1000)
     top_k: int = Field(default=5, ge=1, le=10)
+    patient_id: str | None = None
 
 
 def get_age(demographics):
@@ -59,10 +62,11 @@ def get_age(demographics):
     try:
         born = datetime.strptime(birthdate, "%Y-%m-%d").date()
         today = date.today()
+
         return today.year - born.year - (
             (today.month, today.day) < (born.month, born.day)
         )
-    except ValueError:
+    except (ValueError, TypeError):
         return None
 
 
@@ -86,12 +90,16 @@ def home():
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "ok", "patient_records_loaded": len(PATIENTS)}
+    return {
+        "status": "ok",
+        "patient_records_loaded": len(PATIENTS)
+    }
 
 
 @app.get("/api/patients")
 def list_patients():
     """Return basic patient cards for the frontend."""
+
     return [
         patient_card(patient, index)
         for index, patient in enumerate(PATIENTS)
@@ -102,16 +110,13 @@ def list_patients():
 def get_patient(patient_id: str):
     """Return selected clinical history for one patient."""
 
-    patient = next(
-        (
-            p for p in PATIENTS
-            if str(p.get("patient_id", "")) == patient_id
-        ),
-        None,
-    )
+    patient = get_patient_by_id(patient_id, PATIENTS)
 
     if patient is None:
-        raise HTTPException(status_code=404, detail="Patient not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Patient not found"
+        )
 
     demographics = patient.get("demographics", {})
 
@@ -190,31 +195,52 @@ def search_guidelines(request: RAGSearchRequest):
 
     except Exception as error:
         print("RAG search error:", error)
+
         raise HTTPException(
             status_code=500,
             detail="RAG search failed. Check the backend terminal."
         )
 
+
 @app.post("/api/rag/answer")
 def generate_answer(request: RAGSearchRequest):
-    """Generate an evidence-grounded answer using Gemini."""
+    """Generate a patient-aware, evidence-grounded answer."""
 
     try:
+        patient = None
+
+        if request.patient_id:
+            patient = get_patient_by_id(
+                request.patient_id,
+                PATIENTS
+            )
+
+            if patient is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Patient not found"
+                )
+
         result = generate_clinical_answer(
             request.query,
-            top_k=request.top_k
+            top_k=request.top_k,
+            patient=patient
         )
 
         return {
             "query": request.query,
+            "patient_id": request.patient_id,
             "answer": result["answer"],
             "sources": result["sources"]
         }
+
+    except HTTPException:
+        raise
 
     except Exception as error:
         print("AI answer generation error:", error)
 
         raise HTTPException(
             status_code=500,
-            detail="AI answer generation failed. Check backend terminal."
+            detail="AI answer generation failed. Check the backend terminal."
         )
