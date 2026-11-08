@@ -66,6 +66,9 @@ def generate_clinical_answer(
         Allergy Record Status:
         {patient_data['allergy_record_status']}
 
+        Allergy Details:
+        {patient_data['allergies'] if patient_data['allergies'] else "No allergy records available."}
+
         Total recorded observations:
         {patient_data['observation_count']}
         """
@@ -103,9 +106,11 @@ def generate_clinical_answer(
     3. Consider observation dates and medication start/stop dates.
     4. Never interpret missing allergy records as confirmation
        that the patient has no allergies.
-    5. Do not treat patient history as clinical guideline evidence.
-    6. Do not invent missing patient information.
-    7. If patient information is unavailable, explicitly state that.
+    5. If allergy records are available, consider the recorded
+       allergy details when answering.
+    6. Do not treat patient history as clinical guideline evidence.
+    7. Do not invent missing patient information.
+    8. If patient information is unavailable, explicitly state that.
 
     CLINICAL GUIDELINE EVIDENCE:
     {context}
