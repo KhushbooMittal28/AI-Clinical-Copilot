@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import "./AICopilot.css";
 import { askCopilot } from "../services/copilotService";
@@ -35,6 +35,7 @@ function AICopilot() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState("");
+  const chatRequestId = useRef(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -129,8 +130,12 @@ function AICopilot() {
   );
 
   function handlePatientChange(event) {
+    chatRequestId.current += 1;
     setSelectedPatient(event.target.value);
+    setChatMessages([]);
+    setChatError("");
     setShowPreview(false);
+    setChatLoading(false);
   }
 
   function handlePreview() {
@@ -140,6 +145,7 @@ function AICopilot() {
     if (!chatQuestion.trim() || chatLoading) return;
 
     const question = chatQuestion.trim();
+    const currentRequestId = ++chatRequestId.current;
 
     setChatMessages((previous) => [
       ...previous,
@@ -154,20 +160,28 @@ function AICopilot() {
     setChatError("");
 
     try {
-      const data = await askCopilot(question);
+      const data = await askCopilot(question, selectedPatient || null);
 
-      setChatMessages((previous) => [
-        ...previous,
-        {
-          role: "assistant",
-          content: data.answer || "No answer was returned.",
-          sources: data.sources || [],
-        },
-      ]);
+      if (currentRequestId === chatRequestId.current) {
+        setChatMessages((previous) => [
+          ...previous,
+          {
+            role: "assistant",
+            content: data.answer || "No answer was returned.",
+            sources: data.sources || [],
+          },
+        ]);
+      }
     } catch (err) {
-      setChatError(err.message || "Unable to get a response from AI Copilot.");
+      if (currentRequestId === chatRequestId.current) {
+        setChatError(
+          err.message || "Unable to get a response from AI Copilot.",
+        );
+      }
     } finally {
-      setChatLoading(false);
+      if (currentRequestId === chatRequestId.current) {
+        setChatLoading(false);
+      }
     }
   }
 
