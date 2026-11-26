@@ -135,6 +135,7 @@ function AICopilot() {
     setChatMessages([]);
     setChatError("");
     setShowPreview(false);
+    setChatLoading(false);
   }
 
   function handlePreview() {
