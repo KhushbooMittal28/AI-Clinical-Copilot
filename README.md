@@ -1,6 +1,8 @@
+
+
 # AI Clinical Copilot for Primary Care
 
-> A clinician-in-the-loop AI system designed to assist primary-care workflows through patient history summarization, medical information retrieval, and structured consultation support.
+> A clinician-in-the-loop AI system designed to assist primary-care workflows through patient history summarization, patient-aware medical information retrieval, and structured consultation support.
 
 ---
 
@@ -8,9 +10,11 @@
 
 Primary-care doctors often need to review patient history, symptoms, previous clinical notes, medications, and other clinical information before and during a consultation. This information may be distributed across multiple records, making it time-consuming to review and organize.
 
-The **AI Clinical Copilot for Primary Care** aims to provide an AI-assisted workflow that helps organize and summarize patient information and retrieve relevant medical knowledge using **Natural Language Processing (NLP), Large Language Models (LLMs), and Retrieval-Augmented Generation (RAG)**.
+The **AI Clinical Copilot for Primary Care** aims to provide an AI-assisted workflow that helps organize patient information and retrieve relevant medical knowledge using **Natural Language Processing (NLP), Large Language Models (LLMs), and Retrieval-Augmented Generation (RAG)**.
 
-The system is designed as a **clinician-in-the-loop decision-support prototype**, where AI-generated information is presented to the doctor for review rather than being used for autonomous diagnosis or treatment.
+The system integrates patient-specific clinical context with medical guideline retrieval to generate context-aware responses to clinical queries.
+
+It is designed as a **clinician-in-the-loop decision-support prototype**, where AI-generated information is presented to the doctor for review rather than being used for autonomous diagnosis or treatment.
 
 ---
 
@@ -19,12 +23,24 @@ The system is designed as a **clinician-in-the-loop decision-support prototype**
 The main objectives of the project are:
 
 - Summarize patient history and relevant clinical information.
-- Process symptoms and clinical notes using NLP/LLM-based methods.
+- Process clinical queries using LLM-based methods.
 - Retrieve relevant medical information using Retrieval-Augmented Generation (RAG).
-- Generate structured consultation summaries.
+- Incorporate selected patient context into clinical queries.
+- Generate structured and context-aware clinical responses.
 - Provide a simple and intuitive doctor-facing web interface.
-- Present AI-generated information with appropriate source references.
+- Present AI-generated information with relevant source references.
 - Keep the doctor in control of the final clinical decision.
+
+---
+
+## Key Features
+
+- **Patient Selection:** Select a patient from the available synthetic patient dataset.
+- **Patient-Aware AI Copilot:** Ask clinical questions using the selected patient's medical context.
+- **Medical Knowledge Retrieval:** Retrieve relevant information from curated medical guidelines.
+- **Source References:** Display supporting document names and page numbers with AI responses.
+- **Context Management:** Clear previous chat messages when switching between patients.
+- **Clinician-in-the-Loop Workflow:** Keep AI-generated responses available for doctor review.
 
 ---
 
@@ -36,12 +52,13 @@ The research will investigate aspects such as:
 
 - Patient information summarization
 - Medical knowledge retrieval
+- Patient-aware question answering
 - Source-grounded AI responses
 - Reliability and hallucination
 - Human/doctor review
 - Quality of generated clinical summaries
 
-The final system will serve as a prototype for experimentation and evaluation rather than a production-ready medical system.
+The final system serves as a prototype for experimentation and evaluation rather than a production-ready medical system.
 
 ---
 
@@ -52,44 +69,90 @@ The final system will serve as a prototype for experimentation and evaluation ra
 | Frontend | React.js + Vite |
 | Backend | Python + FastAPI |
 | Programming Languages | Python, JavaScript |
+| Large Language Model | Google Gemini |
 | AI / NLP | Large Language Models (LLMs) |
-| RAG | Retrieval-Augmented Generation (RAG) |
-| Embeddings | To be finalized |
-| Vector Database | To be finalized |
+| RAG Framework | Retrieval-Augmented Generation (RAG) |
+| Embeddings | Sentence Transformers |
+| Vector Database | FAISS |
 | Patient Dataset | Synthea Synthetic Patient Data |
-| Medical Knowledge Base | Curated Medical Guidelines and Reference Documents |
-| Database | To be finalized |
+| Medical Knowledge Base | Curated WHO Medical Guidelines |
 | Version Control | Git + GitHub |
 
-## 🏥 System Workflow
+---
 
-The proposed system follows a clinician-in-the-loop workflow:
+## System Workflow
+
+The system follows a clinician-in-the-loop, patient-aware RAG workflow:
 
 ```text
 Doctor
    ↓
-Web Interface
+React Web Interface
    ↓
-Patient Information / Clinical Notes
+Patient Selection
    ↓
-Preprocessing
+Clinical Query
    ↓
-NLP / LLM
+FastAPI Backend
    ↓
-RAG
+Patient Context Retrieval
    ↓
-Medical Knowledge Base + Vector Database
+Medical Knowledge Retrieval (RAG)
    ↓
-Retrieved Context
+FAISS Vector Search
    ↓
-LLM
+Relevant Guideline Context
    ↓
-Structured Clinical Output
+Patient Context + Retrieved Context
+   ↓
+Google Gemini LLM
+   ↓
+Context-Aware AI Response
+   ↓
+Source References
    ↓
 Doctor Review
    ↓
 Final Clinical Decision
 ```
+
+---
+
+## Project Structure
+
+```text
+AI-Clinical-Copilot/
+│
+├── backend/
+│   ├── main.py
+│   ├── llm_service.py
+│   ├── patient_context.py
+│   └── ...
+│
+├── frontend/
+│   ├── src/
+│   │   ├── pages/
+│   │   ├── services/
+│   │   └── ...
+│   └── ...
+│
+├── data/
+├── docs/
+├── rag/
+└── README.md
+```
+
+---
+
+## Safety and Limitations
+
+- This project is an academic prototype and is not intended for direct clinical deployment.
+- AI-generated responses may contain inaccuracies and must be reviewed by a qualified healthcare professional.
+- The system does not replace professional medical judgment.
+- The patient dataset used for development is synthetic.
+- Clinical decisions remain the responsibility of the treating healthcare professional.
+
+---
 
 ## References
 
@@ -114,3 +177,10 @@ Final Clinical Decision
 10. Lukac, S., et al. (2025). *Ambient AI Scribes in Clinical Practice: A Randomized Trial*. NEJM AI.
 
 11. Wang, X., et al. (2026). *Human–Large Language Model Collaboration in Clinical Medicine: A Systematic Review and Meta-Analysis*. npj Digital Medicine.
+
+---
+
+## Disclaimer
+
+This project is developed for academic and research purposes only. It is not a substitute for professional medical advice, diagnosis, or treatment.
+
